@@ -254,6 +254,15 @@ if __name__ == "__main__":
     #! Ensure results directory exists
     if not os.path.exists("results"):
         os.makedirs("results")
+    
+    #! Check if CUDA is available and print status
+    is_cuda_available = torch.cuda.is_available()
+    if is_cuda_available:
+        print(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
+        print(f"Number of available GPUs: {torch.cuda.device_count()}")
+    else:
+        print("CUDA is not available. Running on CPU only.")
+        print("Warning: Training will be significantly slower without GPU acceleration.")
 
     # Open the pickle file in binary mode for reading
     file_name = './dataset/Nuscenes_data' +'/'+ 'Train_Val_Sets'
