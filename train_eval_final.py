@@ -66,6 +66,13 @@ parser.add_argument('--gmm_eps', type=float, default=1e-6,
 
 args = parser.parse_args()
 
+#! Ensure num_k and ped_num_k are the same for GMM_NLL
+if args.lossFunction == 'GMM_NLL':
+    #! Use the larger of the two values for both parameters
+    max_k = max(args.num_k, args.ped_num_k)
+    args.num_k = max_k
+    args.ped_num_k = max_k
+
 
 
 class Custom_Dataset(torch.utils.data.dataset.Dataset):#, histsize=None, futsize=None):
@@ -352,7 +359,7 @@ def train(epoch, model, loss_fn, cls_criterion, optimizer, train_dataloader, mot
             eta = 0
             
         #! Clear previous line and print updated progress
-        print(f"\rEpoch {epoch+1}: [{bar}] {progress*100:.1f}% | Loss: {loss.item():.4f} | ETA: {eta:.1f}s     ", end='')
+        print(f"\rEpoch: {epoch} {bar} {progress*100:.1f}%\t| Loss: {loss.item():.4f}\t| ETA: {eta:.1f}s     ", end='')
         
     return total_loss
 
@@ -543,17 +550,16 @@ if __name__ == "__main__":
             min_fde = fde
             min_ade = ade
             min_fde_epoch = ep
-            ade_vector_ = np.array(ade_vector.cpu())
-            fde_vector_ = np.array(fde_vector.cpu())
+            ade_vector_ = np.array(ade_vector.cpu(), copy=True)
+            fde_vector_ = np.array(fde_vector.cpu(), copy=True)
 
             torch.save(model.state_dict(), f"{checkpoint_dir}/best.pth")
             np.savez(fde_ade_file, fde_vector=fde_vector_, ade_vector=ade_vector_)
 
         train_loss = sum(total_loss) / len(total_loss)
 
-        print('epoch:', ep, 'data_set:', args.dataset_name, 'loss_type:', args.lossFunction, 'total_loss:', train_loss)
-        print('epoch:', ep, 'ade:', ade, 'fde:', fde, 'min_ade:', min_ade, 
-            'min_fde:', min_fde, 'num_traj:', num_traj, "min_fde_epoch:", min_fde_epoch)
+        print(f'\n\tEpoch:{ep}\tdata_set:{args.dataset_name}\tloss_type:{args.lossFunction}\ttotal_loss:{train_loss:.4f}')
+        print(f'\tEpoch:{ep}\tade: {ade:.4f}\tfde:{fde:.4f}\tmin_ade: {min_ade:.4f}\tmin_fde:{min_fde:.4f}\tnum_traj: {num_traj:.4f}\tmin_fde_epoch: {min_fde_epoch:.4f}')
         
         #! Append epoch's metrics to the CSV file
         with open(train_log_file, 'a', newline='') as f:

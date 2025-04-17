@@ -238,21 +238,27 @@ def create_comparative_barplot(results, output_dir='results'):
     metrics = ['Best Average minADE', 'Best Average minFDE', 
                'Best median minADE', 'Best median minFDE']
     
+    # Define specific order for loss functions
+    ordered_loss_functions = ['minADE', 'minADEdiv', 'GMM_NLL']
+    
     # Create a dict to store values for each metric and loss function
     data = {metric: [] for metric in metrics}
-    loss_functions = []
+    available_loss_functions = []
     
-    for loss_name, df in results.items():
-        loss_functions.append(loss_name)
-        for metric in metrics:
-            # Extract value for this metric
-            value = df[df['metric'] == metric]['value'].values
-            data[metric].append(value[0] if len(value) > 0 else np.nan)
+    # Process results in the desired order
+    for loss_name in ordered_loss_functions:
+        if loss_name in results:
+            available_loss_functions.append(loss_name)
+            df = results[loss_name]
+            for metric in metrics:
+                # Extract value for this metric
+                value = df[df['metric'] == metric]['value'].values
+                data[metric].append(value[0] if len(value) > 0 else np.nan)
     
     # Create the bar plot
     fig, ax = plt.subplots(figsize=(12, 8))
     
-    x = np.arange(len(loss_functions))
+    x = np.arange(len(available_loss_functions))
     width = 0.2
     multiplier = 0
     
@@ -265,7 +271,7 @@ def create_comparative_barplot(results, output_dir='results'):
     ax.set_xlabel('Loss Function')
     ax.set_ylabel('Value (lower is better)')
     ax.set_title('Comparison of Best Results Across Loss Functions')
-    ax.set_xticks(x + width, loss_functions)
+    ax.set_xticks(x + width, available_loss_functions)
     ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
     ax.grid(axis='y')
     

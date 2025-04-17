@@ -1,0 +1,9 @@
+metric,value
+Best Average minADE,0.5930888
+Best Average minFDE,0.9238488
+Best median minADE,0.49979228
+Best median minFDE,0.6180004
+Best 10th percentile minADE,0.20889553
+Best 10th percentile minFDE,0.18449965
+Best 90th percentile minADE,1.0640471
+Best 90th percentile minFDE,2.0265203
