@@ -288,6 +288,10 @@ def get_cls_label(gt, motion_modes, soft_label=True):
 def train(epoch, model, loss_fn, cls_criterion, optimizer, train_dataloader, motion_modes, just_x_y, num_k, ped_num_k, loss_type):
     model.train()
     total_loss = []
+    total_batches = len(train_dataloader)
+    
+    #! Progress tracking
+    start_time = time.time()
 
     for i, (ped_traj, nei_traj, mask_nearest) in enumerate(train_dataloader):
         ped_obs = ped_traj[:, :args.obs_len]
@@ -332,6 +336,23 @@ def train(epoch, model, loss_fn, cls_criterion, optimizer, train_dataloader, mot
         optimizer.step()
         optimizer.zero_grad()
         total_loss.append(loss.item())
+
+        #! Print progress bar
+        progress = (i + 1) / total_batches
+        bar_length = 30
+        filled_length = int(bar_length * progress)
+        bar = '▓' * filled_length + '▒' * (bar_length - filled_length)
+        
+        #! Calculate time stats
+        elapsed_time = time.time() - start_time
+        if progress > 0:
+            est_total_time = elapsed_time / progress
+            eta = est_total_time - elapsed_time
+        else:
+            eta = 0
+            
+        #! Clear previous line and print updated progress
+        print(f"\rEpoch {epoch+1}: [{bar}] {progress*100:.1f}% | Loss: {loss.item():.4f} | ETA: {eta:.1f}s     ", end='')
         
     return total_loss
 
@@ -386,7 +407,7 @@ def test(model, test_dataloader, motion_modes, just_x_y, num_k, ped_num_k):
 
 
 
-################################################################################ beginning of main ####################################################################################
+##################################################### Beginning of Main #####################################################
 
 
 
@@ -404,6 +425,17 @@ if __name__ == "__main__":
     else:
         print("CUDA is not available. Running on CPU only.")
         print("Warning: Training will be significantly slower without GPU acceleration.")
+
+    #! Save all parser arguments to CSV
+    args_dict = vars(args)
+    args_file = f"results/{args.lossFunction}_arguments.csv"
+    with open(args_file, 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['argument', 'value'])
+        for arg, value in args_dict.items():
+            writer.writerow([arg, value])
+    
+    print(f"Arguments saved to {args_file}")
 
     # Open the pickle file in binary mode for reading
     file_name = './dataset/Nuscenes_data' +'/'+ 'Train_Val_Sets'
@@ -487,7 +519,7 @@ if __name__ == "__main__":
     min_fde = 99
 
     #! Create training log file
-    train_log_file = f"results/{args.dataset_name}_n_clusters_{args.n_clusters}_num_K_{args.num_k}_loss_{args.lossFunction}_training_log.csv"
+    train_log_file = f"results/{args.lossFunction}_training_log.csv"
     with open(train_log_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['epoch', 'dataset', 'loss_type', 'total_loss', 'ade', 'fde', 'min_ade', 'min_fde', 'num_traj', 'min_fde_epoch'])
@@ -501,7 +533,7 @@ if __name__ == "__main__":
         if args.lr_scaling:
             scheduler.step()
 
-        checkpoint_dir = f"{args.checkpoint}_{args.dataset_name}_n_clusters_{args.n_clusters}_num_K_{args.num_k}_loss_{args.lossFunction}"
+        checkpoint_dir = f"{args.checkpoint}_{args.lossFunction}"
         if not os.path.exists(checkpoint_dir):
             os.makedirs(checkpoint_dir)
             
@@ -549,7 +581,7 @@ if __name__ == "__main__":
     print('Best 90th percentile minFDE: ', fde_90_percentiles)
 
     #! Save best results to a csv file
-    best_results_file = f"results/{args.dataset_name}_n_clusters_{args.n_clusters}_num_K_{args.num_k}_loss_{args.lossFunction}_best_results.csv"
+    best_results_file = f"results/{args.lossFunction}_best_results.csv"
     with open(best_results_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['metric', 'value'])
@@ -588,5 +620,5 @@ if __name__ == "__main__":
         ax.set_ylabel("Probability of occurrence")
         ax.label_outer()
 
-    plt.savefig(f"results/{args.dataset_name}_n_clusters_{args.n_clusters}_num_K_{args.num_k}_loss_{args.lossFunction}_cdf.png")
+    plt.savefig(f"results/{args.lossFunction}_cdf.png")
     plt.show()
