@@ -130,14 +130,10 @@ class MinADE_loss(nn.Module):
             :return err:  average minADE over batch members
         """
         num_modes = traj.shape[1] #num_k
-        traj_gt_rpt = traj_gt.unsqueeze(1).repeat(1, num_modes, 1, 1) # repeat ground truth to have the shape [batch_size, num_modes, sequence_length, 2]
-        traj_ = traj.reshape(traj_gt_rpt.shape) # reshape predicted trajectories to have the shape [batch_size, num_modes, sequence_length, 2]
+        traj_gt_rpt = traj_gt.unsqueeze(1).repeat(1, num_modes, 1, 1) # reshape ground truth [batch_size, num_modes, sequence_length, 2]
+        traj_ = traj.reshape(traj_gt_rpt.shape) # reshape predicted trajectories [batch_size, num_modes, sequence_length, 2]
 
-        err = traj_gt_rpt - traj_ # find the difference between ground truth and predicted trajectories 
-
-        # complete this part: calculate the average displacement error between ground truth and each predicted trajectory for each element of batch,
-        # find the minimum average displacement error over proposed trajectories for each element of the batch
-        # average it over batch members and return it as loss value   
+        err = traj_gt_rpt - traj_ # find difference b/w ground truth & predicted trajectories 
 
         #! First compute squared error
         squared_err = torch.pow(err, 2).sum(dim=-1)             # sum over x,y dimensions
@@ -609,13 +605,10 @@ if __name__ == "__main__":
     axs = fig.subplots(1, 2, sharex=True, sharey=True)
 
     # Cumulative distributions of ADE.
-    # We'll use matplotlib's built-in CDF functionality since ecdf might not be available
-    axs[0].hist(ade_vector_, bins=50, density=True, cumulative=True, histtype='step',
-                label=f"ADE CDF ({args.lossFunction})")
+    axs[0].ecdf(ade_vector_, label="ADE CDF")
 
     # cumulative distribution of FDE.
-    axs[1].hist(fde_vector_, bins=50, density=True, cumulative=True, histtype='step',
-                label=f"FDE CDF ({args.lossFunction})")
+    axs[1].ecdf(fde_vector_, label="FDE CDF")
 
     # Label the figure.
     fig.suptitle(f"Cumulative distributions - {args.lossFunction}")
